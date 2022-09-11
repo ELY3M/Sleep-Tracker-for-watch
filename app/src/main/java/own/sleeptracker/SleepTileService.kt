@@ -9,19 +9,12 @@ import androidx.wear.tiles.DimensionBuilders.dp
 import androidx.wear.tiles.DimensionBuilders.sp
 import androidx.wear.tiles.LayoutElementBuilders.LayoutElement
 import androidx.wear.tiles.ModifiersBuilders.*
-import androidx.wear.tiles.material.ButtonColors
-import androidx.wear.tiles.material.Colors
 import com.google.android.horologist.tiles.ExperimentalHorologistTilesApi
 import com.google.android.horologist.tiles.SuspendingTileService
 import java.util.*
 
 
 private const val RESOURCES_VERSION = "0"
-val theme = Colors(
-    /*primary=*/ 0xFFD0BCFF.toInt(), /*onPrimary=*/ 0xFF381E72.toInt(),
-    /*surface=*/ 0xFF202124.toInt(), /*onSurface=*/ 0xFFFFFFFF.toInt()
-)
-val buttonColors = ButtonColors.secondaryButtonColors(theme)
 
 @OptIn(ExperimentalHorologistTilesApi::class)
 class SleepTileService : SuspendingTileService() {
