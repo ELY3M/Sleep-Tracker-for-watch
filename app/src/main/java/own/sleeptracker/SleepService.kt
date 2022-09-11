@@ -52,17 +52,17 @@ class SleepService : Service(), SensorEventListener {
         mAccel = mAccel * 0.9f + delta // perform low-cut filter
         val preferences = PreferenceManager.getDefaultSharedPreferences(applicationContext)
         val running = preferences.getBoolean("running", false)
-        val sensitive = 13.3f
-        //Log.i("owntrackerwatch", "sensitive (weight): $sensitive")
-        //Log.i("owntrackerwatch", "mAccel: $mAccel")
+        val sensitive = 10.3f
+        //Log.i("owntrackerwatchservice", "sensitive (weight): $sensitive")
+        //Log.i("owntrackerwatchservice", "mAccel: $mAccel")
         if (mAccel > sensitive) {
             if (running) {
-                Log.i("owntrackerwatch", "SleepService: watch movement: " + mAccel.toString())
+                Log.i("owntrackerwatchservice", "SleepService: watch movement: " + mAccel.toString())
                 val editor = preferences.edit()
                 editor.putBoolean("running", false)
                 editor.apply()
-                Log.i("owntrackerwatch", "SleepService: sleeptrack after watch moved: " + running)
-                Log.i("owntrackerwatch", "sleep tracking should stop")
+                Log.i("owntrackerwatchservice", "SleepService: sleeptrack after watch moved: " + running)
+                Log.i("owntrackerwatchservice", "sleep tracking should stop")
                 MainActivity.timerStop()
                 MainActivity.running = false
             }

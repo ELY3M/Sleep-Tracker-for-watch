@@ -11,6 +11,7 @@
 
     <application
         android:allowBackup="true"
+        android:exported="true"
         android:icon="@drawable/sleep"
         android:label="@string/app_name"
         android:supportsRtl="true"
@@ -40,7 +41,7 @@
         <service android:name=".SleepService"/>
 
         <service
-            android:name=".TileService"
+            android:name=".SleepTileService"
             android:icon="@drawable/sleep"
             android:label="@string/app_name"
             android:description="@string/app_name"
