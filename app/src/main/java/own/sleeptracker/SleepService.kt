@@ -63,8 +63,6 @@ class SleepService : Service(), SensorEventListener {
                 editor.apply()
                 Log.i("owntrackerwatchservice", "SleepService: sleeptrack after watch moved: " + running)
                 Log.i("owntrackerwatchservice", "sleep tracking should stop")
-                MainActivity.timerStop()
-                MainActivity.running = false
             }
         } /*else {
             val editor = preferences.edit()

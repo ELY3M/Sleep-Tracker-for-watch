@@ -10,6 +10,7 @@ import android.hardware.SensorManager
 import android.os.Bundle
 import android.os.Handler
 import android.util.Log
+import android.view.MotionEvent
 import android.view.View
 import android.widget.Button
 import android.widget.TextView
@@ -21,6 +22,8 @@ import kotlin.math.sqrt
 
 class MainActivity : Activity(), SensorEventListener {
 
+    var seconds = 0
+    var running = false
     private var sensorMan: SensorManager? = null
     private var accelerometer: Sensor? = null
     private var mAccel = 0.0
@@ -32,29 +35,16 @@ class MainActivity : Activity(), SensorEventListener {
     lateinit var preferences: SharedPreferences
     lateinit var edit: SharedPreferences.Editor
 
-
-    companion object {
-        var seconds = 0
-        var running = false
-
-        fun timerStart() {
-            running = true
-        }
-
-        fun timerStop() {
-            running = false
-        }
-
-        fun timerReset() {
-            running = false
-            seconds = 0
-        }
-
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val clickableId = intent.getStringExtra(TileService.EXTRA_CLICKABLE_ID)
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+
+        preferences = PreferenceManager.getDefaultSharedPreferences(applicationContext)
+        edit = preferences.edit()
+        running = preferences.getBoolean("running", false)
+        seconds = preferences.getInt("time", 0)
+        sleepService = Intent(this, SleepService::class.java)
 
         sensorMan = getSystemService(SENSOR_SERVICE) as SensorManager
         accelerometer = sensorMan!!.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
@@ -62,9 +52,7 @@ class MainActivity : Activity(), SensorEventListener {
         mAccelCurrent = SensorManager.GRAVITY_EARTH.toDouble()
         mAccelLast = SensorManager.GRAVITY_EARTH.toDouble()
 
-        binding = ActivityMainBinding.inflate(layoutInflater)
-        setContentView(binding.root)
-
+        val clickableId = intent.getStringExtra(TileService.EXTRA_CLICKABLE_ID)
         if (clickableId == "start") {
             Log.i("owntrackerwatch", "tile start button clicked!!!")
             val start: Button = findViewById<View>(R.id.sleepservice) as Button
@@ -72,7 +60,6 @@ class MainActivity : Activity(), SensorEventListener {
             val edit = preferences.edit()
             val sleepService = Intent(this, SleepService::class.java)
             sensorMan?.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_UI)
-            timerStart()
             running = true
             edit.putBoolean("running", true)
             edit.apply()
@@ -81,20 +68,15 @@ class MainActivity : Activity(), SensorEventListener {
         }
 
 
-        preferences = PreferenceManager.getDefaultSharedPreferences(applicationContext)
-        edit = preferences.edit()
-        sleepService = Intent(this, SleepService::class.java)
-
-
         if (savedInstanceState != null) {
             seconds = savedInstanceState.getInt("seconds")
             running = savedInstanceState.getBoolean("running")
         }
+
         runTimer()
 
 
         val timeView = findViewById<View>(R.id.time) as TextView
-        seconds = preferences.getInt("time", 0)
         val gethours: Int = seconds / 3600
         val getminutes: Int = seconds % 3600 / 60
         val getsecs: Int = seconds % 60
@@ -105,7 +87,6 @@ class MainActivity : Activity(), SensorEventListener {
         start.setOnClickListener {
             if (running) {
                 sensorMan?.unregisterListener(this)
-                timerStop()
                 running = false
                 edit.putBoolean("running", false)
                 edit.apply()
@@ -113,7 +94,6 @@ class MainActivity : Activity(), SensorEventListener {
                 start.text = "Start"
             } else {
                 sensorMan?.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_UI)
-                timerStart()
                 running = true
                 edit.putBoolean("running", true)
                 edit.apply()
@@ -125,29 +105,19 @@ class MainActivity : Activity(), SensorEventListener {
 
         val reset = findViewById<View>(R.id.reset_button) as Button
         reset.setOnClickListener {
-            timerReset()
-            seconds = 0
+            running = false
+            edit.putBoolean("running", false)
+            edit.apply()
+            stopService(sleepService)
             edit.putInt("time", 0)
             edit.apply()
+            seconds = preferences.getInt("time", 0)
+            val hours: Int = seconds / 3600
+            val minutes: Int = seconds % 3600 / 60
+            val secs: Int = seconds % 60
+            var time: String = java.lang.String.format(Locale.getDefault(), "%d:%02d:%02d", hours, minutes, secs)
+            timeView.text = time
         }
-/*
-        if (clickableId == "start") {
-            Log.i("owntrackerwatch", "tile start button clicked!!!")
-            val start: Button = findViewById<View>(R.id.sleepservice) as Button
-            val preferences = PreferenceManager.getDefaultSharedPreferences(applicationContext)
-            val edit = preferences.edit()
-            val sleepService = Intent(this, SleepService::class.java)
-            sensorMan?.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_UI)
-            timerStart()
-            running = true
-            edit.putBoolean("running", true)
-            edit.apply()
-            startService(sleepService)
-            start.text = "Stop"
-        }
-  */
-
-
 
     }
 
@@ -156,6 +126,7 @@ class MainActivity : Activity(), SensorEventListener {
         val start = findViewById<View>(R.id.sleepservice) as Button
         edit = preferences.edit()
         val handler = Handler()
+        running = preferences.getBoolean("running", false)
         seconds = preferences.getInt("time", 0)
         handler.post(object : Runnable {
             override fun run() {
@@ -178,6 +149,29 @@ class MainActivity : Activity(), SensorEventListener {
         })
     }
 
+    override fun onPause() {
+        super.onPause()
+        edit.putInt("time", seconds)
+        edit.apply()
+        Log.i("owntracker","onPause()!!!  seconds: $seconds")
+    }
+    override fun onDestroy() {
+        super.onDestroy()
+        edit.putInt("time", seconds)
+        edit.apply()
+        Log.i("owntracker","onDestory()!!!  seconds: $seconds")
+    }
+
+    override fun onResume() {
+        super.onResume()
+        Log.i("owntrackerwatch", "onResume()....")
+    }
+
+    override fun onTouchEvent(event: MotionEvent?): Boolean {
+        Log.i("owntrackerwatch", "touched....")
+        return super.onTouchEvent(event)
+
+    }
 
     override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) {}
     override fun onSensorChanged(event: SensorEvent) {
@@ -190,7 +184,7 @@ class MainActivity : Activity(), SensorEventListener {
         mAccel = mAccel * 0.9f + delta // perform low-cut filter
         sleepService = Intent(this, SleepService::class.java)
         val preferences = PreferenceManager.getDefaultSharedPreferences(applicationContext)
-        var running = preferences.getBoolean("running", false)
+        running = preferences.getBoolean("running", false)
         val sensitive = 10.3f
         //Log.i("owntrackerwatch", "sensitive (weight): $sensitive")
         //Log.i("owntrackerwatch", "mAccel: $mAccel")
@@ -202,7 +196,7 @@ class MainActivity : Activity(), SensorEventListener {
                 editor.apply()
                 Log.i("owntrackerwatch", "SleepService: sleeptrack after watch moved: " + running)
                 Log.i("owntrackerwatch", "sleep tracking should stop")
-                timerStop()
+                //timerStop()
                 stopService(sleepService)
                 running = false
             }
